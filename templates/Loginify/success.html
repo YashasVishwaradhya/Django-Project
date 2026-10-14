@@ -1,0 +1,8 @@
+{% extends "Loginify/base.html" %}
+{% block title %}Welcome | Login System{% endblock %}
+{% block content %}
+  <div class="notice success-card" role="status">
+    <h1>Login successful</h1>
+    <p>Welcome, {{ request.user.email|default:request.user.get_username }}.</p>
+  </div>
+{% endblock %}

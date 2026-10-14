@@ -1,0 +1,153 @@
+{
+  "info": {
+    "_postman_id": "9c9ab165-0e86-4fd0-9d55-9884da1a4ea9",
+    "name": "DjangoProject Login System",
+    "description": "Signup, email login, and staff-only UserDetails CRUD examples. Configure the local environment and run the CSRF requests before API mutations.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://127.0.0.1:8000" },
+    { "key": "csrfToken", "value": "" },
+    { "key": "staffEmail", "value": "" },
+    { "key": "staffPassword", "value": "" },
+    { "key": "userEmail", "value": "person@example.test" },
+    { "key": "duplicateEmail", "value": "another@example.test" }
+  ],
+  "item": [
+    {
+      "name": "Pages and signup",
+      "item": [
+        {
+          "name": "Hello world",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/hello/" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('exact hello response', function () { pm.response.to.have.status(200); pm.expect(pm.response.text()).to.eql('Hello, world!'); });"] } }]
+        },
+        {
+          "name": "Signup success",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/x-www-form-urlencoded" }, { "key": "X-CSRFToken", "value": "{{csrfToken}}" }],
+            "body": { "mode": "urlencoded", "urlencoded": [{ "key": "name", "value": "Postman Person", "type": "text" }, { "key": "email", "value": "{{userEmail}}", "type": "text" }, { "key": "password", "value": "Postman-Example-Password-947!", "type": "text" }] },
+            "url": "{{baseUrl}}/signup/"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('signup redirects to login with confirmation', function () { if (pm.response.code === 302) pm.expect(pm.response.headers.get('Location')).to.include('/login/'); else { pm.response.to.have.status(200); pm.expect(pm.response.text()).to.include('Account created'); } });"] } }]
+        },
+        {
+          "name": "Signup duplicate email error",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/x-www-form-urlencoded" }, { "key": "X-CSRFToken", "value": "{{csrfToken}}" }],
+            "body": { "mode": "urlencoded", "urlencoded": [{ "key": "name", "value": "Another Person", "type": "text" }, { "key": "email", "value": "{{userEmail}}", "type": "text" }, { "key": "password", "value": "Postman-Example-Password-947!", "type": "text" }] },
+            "url": "{{baseUrl}}/signup/"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('duplicate signup shows a form error', function () { pm.response.to.have.status(200); pm.expect(pm.response.text()).to.include('already exists'); });"] } }]
+        },
+        {
+          "name": "Signup second profile for duplicate-update example",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/x-www-form-urlencoded" }, { "key": "X-CSRFToken", "value": "{{csrfToken}}" }],
+            "body": { "mode": "urlencoded", "urlencoded": [{ "key": "name", "value": "Postman Duplicate Target", "type": "text" }, { "key": "email", "value": "{{duplicateEmail}}", "type": "text" }, { "key": "password", "value": "Postman-Example-Password-947!", "type": "text" }] },
+            "url": "{{baseUrl}}/signup/"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('second signup redirects with confirmation', function () { if (pm.response.code === 302) pm.expect(pm.response.headers.get('Location')).to.include('/login/'); else { pm.response.to.have.status(200); pm.expect(pm.response.text()).to.include('Account created'); } });"] } }]
+        },
+        {
+          "name": "Signup invalid email error",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/x-www-form-urlencoded" }, { "key": "X-CSRFToken", "value": "{{csrfToken}}" }],
+            "body": { "mode": "urlencoded", "urlencoded": [{ "key": "name", "value": "Invalid Email", "type": "text" }, { "key": "email", "value": "not-an-email", "type": "text" }, { "key": "password", "value": "Postman-Example-Password-947!", "type": "text" }] },
+            "url": "{{baseUrl}}/signup/"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('invalid email is rejected', function () { pm.response.to.have.status(200); pm.expect(pm.response.text()).to.include('Enter a valid email address'); });"] } }]
+        },
+        {
+          "name": "Login wrong credentials",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/x-www-form-urlencoded" }, { "key": "X-CSRFToken", "value": "{{csrfToken}}" }],
+            "body": { "mode": "urlencoded", "urlencoded": [{ "key": "email", "value": "{{staffEmail}}", "type": "text" }, { "key": "password", "value": "incorrect-password", "type": "text" }] },
+            "url": "{{baseUrl}}/login/"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('bad credentials are rejected', function () { pm.response.to.have.status(200); pm.expect(pm.response.text()).to.include('email or password is incorrect'); });"] } }]
+        }
+      ]
+    },
+    {
+      "name": "Staff session and CSRF",
+      "item": [
+        {
+          "name": "Fetch login page (CSRF)",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/login/" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["const token = pm.cookies.get('csrftoken');", "if (token) pm.environment.set('csrfToken', token);", "pm.test('login page loaded and CSRF cookie stored', function () { pm.response.to.have.status(200); pm.expect(token).to.be.ok; });"] } }]
+        },
+        {
+          "name": "Login as staff",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/x-www-form-urlencoded" }, { "key": "X-CSRFToken", "value": "{{csrfToken}}" }],
+            "body": { "mode": "urlencoded", "urlencoded": [{ "key": "email", "value": "{{staffEmail}}", "type": "text" }, { "key": "password", "value": "{{staffPassword}}", "type": "text" }] },
+            "url": "{{baseUrl}}/login/"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["const token = pm.cookies.get('csrftoken');", "if (token) pm.environment.set('csrfToken', token);", "pm.test('staff login succeeded', function () { pm.expect([200, 302]).to.include(pm.response.code); });"] } }]
+        },
+        {
+          "name": "List profiles (success)",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/api/users/" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('profile list returned without credentials', function () { pm.response.to.have.status(200); pm.expect(pm.response.text().toLowerCase()).not.to.include('password'); });"] } }]
+        },
+        {
+          "name": "Get profile by email (success)",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/api/users/{{userEmail}}/" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('profile lookup returned', function () { pm.response.to.have.status(200); pm.expect(pm.response.text().toLowerCase()).not.to.include('password'); });"] } }]
+        },
+        {
+          "name": "Get profile by email (not found)",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/api/users/missing-user@example.test/" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('unknown email returns 404', function () { pm.response.to.have.status(404); });"] } }]
+        },
+        {
+          "name": "Update profile (success)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "X-CSRFToken", "value": "{{csrfToken}}" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Updated Postman Person\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": "{{baseUrl}}/api/users/{{userEmail}}/update/"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('profile updated', function () { pm.response.to.have.status(200); pm.expect(pm.response.json().user.username).to.eql('Updated Postman Person'); });"] } }]
+        },
+        {
+          "name": "Update malformed JSON (error)",
+          "request": { "method": "PATCH", "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "X-CSRFToken", "value": "{{csrfToken}}" }], "body": { "mode": "raw", "raw": "{", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/api/users/{{userEmail}}/update/" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('malformed JSON returns 400', function () { pm.response.to.have.status(400); });"] } }]
+        },
+        {
+          "name": "Update duplicate email (error)",
+          "request": { "method": "PATCH", "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "X-CSRFToken", "value": "{{csrfToken}}" }], "body": { "mode": "raw", "raw": "{\n  \"email\": \"{{duplicateEmail}}\"\n}", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/api/users/{{userEmail}}/update/" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('duplicate email returns 409', function () { pm.response.to.have.status(409); });"] } }]
+        },
+        {
+          "name": "Update profile (not found)",
+          "request": { "method": "PATCH", "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "X-CSRFToken", "value": "{{csrfToken}}" }], "body": { "mode": "raw", "raw": "{\n  \"name\": \"Nobody\"\n}", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/api/users/missing-user@example.test/update/" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('unknown update returns 404', function () { pm.response.to.have.status(404); });"] } }]
+        },
+        {
+          "name": "Delete profile (success)",
+          "request": { "method": "DELETE", "header": [{ "key": "X-CSRFToken", "value": "{{csrfToken}}" }], "url": "{{baseUrl}}/api/users/{{userEmail}}/delete/" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('delete returns no content', function () { pm.response.to.have.status(204); });"] } }]
+        },
+        {
+          "name": "Delete missing profile (error)",
+          "request": { "method": "DELETE", "header": [{ "key": "X-CSRFToken", "value": "{{csrfToken}}" }], "url": "{{baseUrl}}/api/users/missing-user@example.test/delete/" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('unknown delete returns 404', function () { pm.response.to.have.status(404); });"] } }]
+        },
+        {
+          "name": "Delete without CSRF (error)",
+          "request": { "method": "DELETE", "header": [{ "key": "X-CSRFToken", "value": "invalid-token" }], "url": "{{baseUrl}}/api/users/{{userEmail}}/delete/" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('invalid CSRF token returns 403', function () { pm.response.to.have.status(403); });"] } }]
+        }
+      ]
+    }
+  ]
+}

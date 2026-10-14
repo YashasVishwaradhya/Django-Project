@@ -1,0 +1,16 @@
+# Python bytecode and virtual environments
+__pycache__/
+*.py[cod]
+DjangoAssignment/
+.venv/
+venv/
+
+# Local database and secrets
+db.sqlite3
+.env
+
+# Editor and operating-system files
+.DS_Store
+.idea/
+.vscode/
+*.Rhistory
